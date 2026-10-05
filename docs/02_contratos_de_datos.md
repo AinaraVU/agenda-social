@@ -53,7 +53,7 @@ Alimenta la ficha de cabecera de cada pestaña («34 barómetros · De septiembr
 
 El `data.json` publicado actualmente es la **referencia**: cualquier versión nueva tiene que tener la misma forma. `R/comprobar_data_json.R` lo verifica campo a campo (bloques que faltan, tipos que cambian, número de oleadas que baja) antes de subir nada.
 
-`cis_radar` lo genera `R/radar_cis.R`: para cada barómetro, grupo de población (sexo, edad, estudios, clase, ideología, recuerdo 2023, hábitat, situación laboral) y partido (PSOE, PP, VOX, Sumar, Podemos, SALF), el % de voto + simpatía (`partidos`, VOTOSIMG) y de intención directa (`intencion`, INTENCIONGR) sobre el total del grupo, ponderado con PESO. `partidos.<dim>.<grupo>` es una lista por barómetro con los seis valores en el orden de `ejes_partidos`; `n` da las entrevistas de cada grupo.
+`cis_radar` lo genera `R/radar_cis.R`: para cada barómetro, grupo de población (sexo, edad, estudios, clase, ideología, recuerdo 2023, hábitat, situación laboral) y partido (PSOE, PP, VOX, Sumar, Podemos, SALF), el % de voto + simpatía (`partidos`, VOTOSIMG) y de intención directa (`intencion`, INTENCIONGR) sobre el total del grupo, ponderado con PESO, y el % que cita cada problema de España entre sus tres principales (`problemas`, PESPANNA1-3; `problemas_nombres[k]` lista los 15 más citados del barómetro k, en el mismo orden que los valores). El dashboard dibuja el radar de problemas y el de intención (sin SALF). `partidos.<dim>.<grupo>` es una lista por barómetro con los seis valores en el orden de `ejes_partidos`; `n` da las entrevistas de cada grupo.
 
 Si un bloque falta, su tarjeta simplemente no se dibuja (el código hace `if(!DATA.x) return`).
 

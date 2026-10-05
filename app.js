@@ -289,29 +289,40 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     clase:"Clase social subjetiva en tres categorías (así la pregunta el Sociómetro); sin NS/NC."}});
 
 /* ===================== CIS · Radares por grupo de población (bloque cis_radar, R/radar_cis.R) ===================== */
-/* Dos radares con la misma mecánica: ejes = partidos, en voto + simpatía o en intención directa de voto;
-   cada polígono es un grupo de población; el total de la población va siempre como referencia discontinua. */
+/* Dos radares con la misma mecánica: cada polígono es un grupo de población y el total de la población va
+   siempre como referencia discontinua.
+   1) Problemas: vértices = los 5 problemas más citados por el total + los 5 primeros de cada grupo marcado (máx. 8).
+   2) Intención directa de voto: vértices = los seis partidos estatales, de izquierda a derecha. */
 (function(){
   const R=DATA.cis_radar, grid=document.getElementById("grid-cis-voto"); if(!R||!grid)return;
-  const COLP={...PARTY_COLORS,"Se Acabó la Fiesta":"#6D4C41"};
-  const GCOL=["#014550","#FF723C","#8739E5","#F6BD32"];          // colores de los grupos (paleta S&M)
+  const GCOL=[SM.c.teal,SM.c.naranja,SM.c.purpura,SM.c.amarillo];   // series en el orden de la paleta S&M
   const nf=v=>v==null?"–":v.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
   const MES3=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   const xl=f=>`${MES3[+f.slice(5)-1]} ${f.slice(0,4)}`;
   const DIMS=R.dims.filter(d=>d.id!=="total");
-  // grupos que se marcan al cambiar de variable: los extremos, para ver el contraste
+  const CORTA=DATA.cis_problemas?.corta||{};
+  const corto=n=>CORTA[n]||n.replace(/^(La|El|Los|Las) /,"").replace(/^./,c=>c.toUpperCase());
   const DEF={edad:["18-24","65 y más"],ideologia:["Izquierda (1-2)","Centro (5-6)","Derecha (9-10)"],recuerdo:["PSOE","PP","VOX"],
     sexo:["Hombre","Mujer"],estudios:["Sin estudios o primaria","Superiores"],clase:["Alta y media alta","Trabajadora/obrera"],
     habitat:["Hasta 10.000 hab.","Más de 400.000"],laboral:["Trabaja","Jubilado/a o pensionista","Estudiante"]};
+  const PART_ORD=["PSOE","Sumar","Podemos","Se Acabó la Fiesta","VOX","PP"];
   const CFG=[
-    // orden de los ejes alrededor del radar: de izquierda a derecha, para que los grupos «se inclinen» hacia su lado
-    {id:"rp",clave:"partidos",ejes:R.ejes_partidos,orden:["PSOE","Sumar","Podemos","Se Acabó la Fiesta","VOX","PP"],dim0:"edad",titulo:"¿Con qué partido simpatiza cada grupo?",
-     subt:"Voto + simpatía en unas elecciones generales · cada grupo frente al total de la población",
-     corto:{"Se Acabó la Fiesta":"SALF"},
-     nota:"Fuente: Barómetros del CIS (microdatos), voto + simpatía (VOTOSIMG) ponderado con PESO. Base: total de personas entrevistadas de cada grupo (incluye ninguno, no sabe, en blanco y otros partidos, que no se dibujan). Podemos y SALF no aparecen por separado hasta 2024."},
-    {id:"ri",clave:"intencion",ejes:R.ejes_partidos,orden:["PSOE","Sumar","Podemos","Se Acabó la Fiesta","VOX","PP"],dim0:"ideologia",titulo:"¿A qué partido votaría cada grupo?",
+    {id:"rp",clave:"problemas",dim0:"edad",titulo:"¿Qué le preocupa a cada grupo?",
+     subt:"Principales problemas de España · cada grupo frente al total de la población",
+     cosa:"ese problema", verbo:"lo menciona",
+     // vértices: 5 primeros del total + 5 primeros de cada grupo marcado, sin repetir, hasta 8
+     ejes:(ol,dim,sel)=>{const nom=R.problemas_nombres[ol], tot=R.problemas.total.Total[ol];
+       const ix=new Set([0,1,2,3,4].filter(i=>i<nom.length));
+       sel.forEach(g=>{const v=R.problemas[dim]?.[g]?.[ol]; if(!v)return;
+         v.map((x,i)=>[x??-1,i]).sort((p,q)=>q[0]-p[0]).slice(0,5).forEach(([,i])=>{if(ix.size<8)ix.add(i);});});
+       return [...ix].sort((p,q)=>(tot[q]??0)-(tot[p]??0)).map(i=>({n:nom[i],i}));},
+     corto:corto,
+     nota:"Fuente: Barómetros del CIS (microdatos), principales problemas de España (PESPANNA1-3, hasta tres respuestas, total de menciones), ponderado con PESO. Base: total de personas entrevistadas de cada grupo. Vértices: los cinco problemas más citados por el total de la población y, si un grupo marcado tiene otro entre sus cinco primeros, también ese (hasta ocho)."},
+    {id:"ri",clave:"intencion",dim0:"ideologia",titulo:"¿A qué partido votaría cada grupo?",
      subt:"Intención directa de voto en unas elecciones generales · cada grupo frente al total de la población",
-     corto:{"Se Acabó la Fiesta":"SALF"},
+     cosa:"ese partido", verbo:"lo votaría",
+     ejes:()=>PART_ORD.map(n=>({n,i:R.ejes_partidos.indexOf(n)})).filter(e=>e.i>=0),
+     corto:n=>n==="Se Acabó la Fiesta"?"SALF":n,
      nota:"Fuente: Barómetros del CIS (microdatos), intención directa de voto recodificada por el CIS (INTENCIONGR), ponderada con PESO, sin estimación («cocina»). Base: total de personas entrevistadas de cada grupo (incluye no votaría, no sabe, en blanco y otros partidos, que no se dibujan). Podemos y SALF no aparecen por separado hasta 2024."}
   ];
   CFG.forEach(C=>{
@@ -322,9 +333,9 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
         <button class="export-btn" data-chart="${id("ch")}" data-name="cis_radar_${C.clave}">⬇ PNG</button></div>
       <div class="ctrls">
         <label class="sel-lab">Grupos por <select id="${id("dim")}" class="sel">${DIMS.map(d=>`<option value="${d.id}"${d.id===C.dim0?" selected":""}>${d.nombre}</option>`).join("")}</select></label>
-        <div class="seg" id="${id("med")}" role="group" aria-label="Medida"><button type="button" data-v="idx" aria-pressed="true">Índice (total = 100)</button><button type="button" data-v="pct" aria-pressed="false">% del grupo</button></div>
         <label class="sel-lab">Barómetro <select id="${id("ol")}" class="sel">${R.fechas.map((f,i)=>`<option value="${i}"${i===R.fechas.length-1?" selected":""}>${xl(f)}</option>`).join("")}</select></label>
       </div>
+      <div class="ctrls"><div class="seg" id="${id("med")}" role="group" aria-label="Medida"><button type="button" data-v="idx" aria-pressed="true">Índice (total = 100)</button><button type="button" data-v="pct" aria-pressed="false">% del grupo</button></div></div>
       <div class="chips" id="${id("chips")}"></div>
       <div class="explica" id="${id("exp")}"></div>
       <div class="chart" id="${id("ch")}" style="height:430px"></div>
@@ -336,14 +347,12 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     document.querySelectorAll(`#${id("med")} button`).forEach(b=>b.addEventListener("click",()=>{med=b.dataset.v;
       document.querySelectorAll(`#${id("med")} button`).forEach(x=>x.setAttribute("aria-pressed",x===b)); pinta();}));
     const grupos=()=>DIMS.find(d=>d.id===dim).grupos;
-    const EJ=C.orden.filter(e=>C.ejes.includes(e)), IX=EJ.map(e=>C.ejes.indexOf(e));
-    const vals=(d,g)=>{const v=R[C.clave][d]?.[g]?.[ol]; return v?IX.map(i=>v[i]):EJ.map(()=>null);};
     const nG=(d,g)=>R.n[d]?.[g]?.[ol];
     function chips(){
       const el=document.getElementById(id("chips"));
       el.innerHTML=grupos().map(g=>{const k=sel.indexOf(g), on=k>=0;
         return `<button type="button" class="chip chip-tg${on?" on":""}" data-g="${encodeURIComponent(g)}" aria-pressed="${on}" ${!on&&sel.length>=4?"disabled":""}>
-          <span class="sw" style="background:${on?GCOL[k]:"#C9C5B8"}"></span><span class="nm">${g}</span></button>`;}).join("");
+          <span class="sw" style="background:${on?GCOL[k]:SM.c.grid}"></span><span class="nm">${g}</span></button>`;}).join("");
       el.querySelectorAll(".chip-tg").forEach(b=>b.addEventListener("click",()=>{const g=decodeURIComponent(b.dataset.g);
         sel=sel.includes(g)?sel.filter(x=>x!==g):[...sel,g]; pinta();}));
     }
@@ -351,48 +360,49 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     document.getElementById(id("ol")).addEventListener("change",e=>{ol=+e.target.value; pinta();});
     function pinta(){
       chips();
-      const mov=window.innerWidth<640, tot=vals("total","Total");
-      const hh=mov?340:430; if(ch.getHeight()&&ch.getHeight()!==hh){document.getElementById(id("ch")).style.height=hh+"px";ch.resize();}
+      const mov=window.innerWidth<640;
+      const hh=mov?360:440; if(ch.getHeight()&&ch.getHeight()!==hh){document.getElementById(id("ch")).style.height=hh+"px";ch.resize();}
+      const EJ=C.ejes(ol,dim,sel);
+      const vals=(d,g)=>{const v=R[C.clave][d]?.[g]?.[ol]; return EJ.map(e=>v?v[e.i]??null:null);};
+      const tot=vals("total","Total");
       const series=sel.map((g,k)=>({g,k,v:vals(dim,g)}));
       // índice: % del grupo / % del total × 100 (100 = igual que el conjunto de la población)
       const idx=v=>v.map((x,i)=>x==null||!tot[i]?null:Math.round(1000*x/tot[i])/10);
-      const dib=v=>med==="idx"?idx(v):v;            // valores dibujados
+      const dib=v=>med==="idx"?idx(v):v;
       const totD=med==="idx"?tot.map(x=>x?100:null):tot;
-      let mx=Math.max(...totD.filter(v=>v!=null),...series.flatMap(s=>dib(s.v).filter(v=>v!=null)),1);
+      const mx=Math.max(...totD.filter(v=>v!=null),...series.flatMap(s=>dib(s.v).filter(v=>v!=null)),1);
       const max=med==="idx"?Math.min(Math.max(200,Math.ceil(mx/50)*50),400):(mx<=20?Math.ceil(mx/5)*5:Math.ceil(mx/10)*10);
-      const nomb=e=>C.corto[e]||e, rich={};
-      EJ.forEach((e,i)=>rich["e"+i]={color:COLP[e]||SM.c.tinta,fontWeight:600,fontSize:mov?10.5:12});
-      const o=smBaseOption();
-      o.legend={show:false};
       const paso=med==="idx"?50:(max<=20?5:10);
-      o.radar={center:["50%","53%"],radius:mov?"62%":"68%",splitNumber:Math.round(max/paso),shape:"polygon",
-        indicator:EJ.map(e=>({name:e,max})),
-        axisName:{formatter:(n)=>{const i=EJ.indexOf(n);return `{e${i}|${nomb(n)}}`;},rich},
-        splitLine:{lineStyle:{color:"#E4E0D6"}},splitArea:{areaStyle:{color:["#FFFFFF","#FAF8F3"]}},axisLine:{lineStyle:{color:"#E4E0D6"}},
-        axisLabel:{show:false},
-      };
+      const o=smBaseOption();
+      o.radar={center:["50%","52%"],radius:mov?"58%":"64%",splitNumber:Math.round(max/paso),shape:"polygon",
+        indicator:EJ.map(e=>({name:e.n,max})),
+        axisName:{color:SM.c.tinta,fontSize:mov?10.5:12,fontWeight:500,fontFamily:SM.sans,
+          formatter:n=>{const t=C.corto(n);return t.length>18?t.replace(/(.{1,18})(\s|$)/g,"$1\n").trim():t;}},
+        nameGap:8,
+        splitLine:{lineStyle:{color:SM.c.grid}},splitArea:{areaStyle:{color:["#FFFFFF",SM.c.crema+"80"]}},axisLine:{lineStyle:{color:SM.c.grid}},
+        axisLabel:{show:false}};
       o.tooltip={backgroundColor:"#fff",borderColor:SM.c.grid,borderWidth:1,confine:true,textStyle:{color:SM.c.tinta,fontFamily:SM.sans,fontSize:12},
-        extraCssText:"box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:3px",
-        formatter:p=>{const v=p.data.raw, ix=idx(v), ord=EJ.map((e,i)=>({e,v:v[i],x:ix[i]})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
-          return `<div style="font-weight:600;margin-bottom:4px">${p.name}</div>`+ord.map(r=>`<div style="display:flex;gap:12px;justify-content:space-between"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLP[r.e]};margin-right:6px"></span>${r.e}</span><span><b>${nf(r.v)} %</b>${med==="idx"&&r.x!=null?` <span style="color:${SM.c.subtle}">· índice ${Math.round(r.x)}</span>`:""}</span></div>`).join("");}};
+        extraCssText:"border-radius:0",
+        formatter:p=>{const v=p.data.raw, ix=idx(v), ord=EJ.map((e,i)=>({e:C.corto(e.n),v:v[i],x:ix[i]})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
+          return `<div style="font-weight:600;margin-bottom:4px">${p.name}</div>`+ord.map(r=>`<div style="display:flex;gap:14px;justify-content:space-between"><span>${r.e}</span><span><b>${nf(r.v)} %</b>${med==="idx"&&r.x!=null&&p.name!=="Total de la población"?` <span style="color:${SM.c.subtle}">· índice ${Math.round(r.x)}</span>`:""}</span></div>`).join("");}};
       o.series=[{type:"radar",symbol:"circle",symbolSize:mov?4:5,data:[
-        {name:"Total de la población",value:totD.map(v=>v==null?0:Math.min(v,max)),raw:tot,lineStyle:{color:"#8C8676",width:1.5,type:"dashed"},itemStyle:{color:"#8C8676"},areaStyle:{opacity:0},z:1},
-        ...series.map(s=>({name:s.g,value:dib(s.v).map(v=>v==null?0:Math.min(v,max)),raw:s.v,lineStyle:{color:GCOL[s.k],width:2.5},itemStyle:{color:GCOL[s.k]},areaStyle:{color:GCOL[s.k],opacity:.14}}))
-      ],emphasis:{lineStyle:{width:3.5},areaStyle:{opacity:.3}}}];
-            o.graphic=[smLogoGraphic(),{type:"text",left:8,bottom:6,silent:true,style:{text:med==="idx"?`Cada anillo: ${paso} · borde: ${max} (valores mayores se recortan)`:`Cada anillo: ${paso} puntos · borde: ${max} %`,fill:SM.c.subtle,fontSize:10.5,fontFamily:SM.sans}}];
+        {name:"Total de la población",value:totD.map(v=>v==null?0:Math.min(v,max)),raw:tot,lineStyle:{color:SM.c.tinta,width:1.2,type:[4,4]},itemStyle:{color:SM.c.tinta},symbolSize:0,areaStyle:{opacity:0},z:1},
+        ...series.map(s=>({name:s.g,value:dib(s.v).map(v=>v==null?0:Math.min(v,max)),raw:s.v,lineStyle:{color:GCOL[s.k],width:2.5},itemStyle:{color:GCOL[s.k]},areaStyle:{color:GCOL[s.k],opacity:.12}}))
+      ],emphasis:{lineStyle:{width:3.5},areaStyle:{opacity:.28}}}];
+      o.graphic=[smLogoGraphic(),{type:"text",left:4,bottom:6,silent:true,style:{text:med==="idx"?`Cada anillo: ${paso} · borde: ${max} (los valores mayores se recortan)`:`Cada anillo: ${paso} puntos · borde: ${max} %`,fill:SM.c.subtle,fontSize:10.5,fontFamily:SM.sans}}];
       ch.setOption(o,true);
-      // explicación del índice con un ejemplo real: el grupo y partido con el índice más alto
+      // explicación del índice con un ejemplo real
       const ex=document.getElementById(id("exp"));
       if(med==="idx"){
-        let best=null; series.forEach(s=>idx(s.v).forEach((x,i)=>{if(x!=null&&tot[i]>=2&&(!best||x>best.x))best={g:s.g,e:EJ[i],x,v:s.v[i],t:tot[i]};}));
+        let best=null; series.forEach(s=>idx(s.v).forEach((x,i)=>{if(x!=null&&tot[i]>=2&&(!best||x>best.x))best={g:s.g,e:C.corto(EJ[i].n),x,v:s.v[i],t:tot[i]};}));
         ex.hidden=false;
-        ex.innerHTML=`<b>Cómo se lee el índice.</b> Compara cada grupo con el conjunto de la población. <b>100</b> (la línea discontinua) significa que el grupo apoya a ese partido igual que la media; <b>200</b>, el doble; <b>50</b>, la mitad. Cuanto más sale un vértice del polígono discontinuo, más destaca ese partido en el grupo.`+
-          (best?` <span class="ej">Ejemplo: ${best.g} · ${nomb(best.e)} = ${nf(best.v)} % frente al ${nf(best.t)} % del total → índice ${Math.round(best.x)}.</span>`:"");
+        ex.innerHTML=`<b>Cómo se lee el índice.</b> Compara cada grupo con el conjunto de la población. <b>100</b> (la línea discontinua) significa que el grupo ${C.verbo} igual que la media; <b>200</b>, el doble; <b>50</b>, la mitad. Cuanto más sale un vértice de la línea discontinua, más destaca ${C.cosa} en ese grupo.`+
+          (best?` <span class="ej">Ejemplo: ${best.g} · ${best.e}: ${nf(best.v)} % frente al ${nf(best.t)} % del total → índice ${Math.round(best.x)}.</span>`:"");
       } else ex.hidden=true;
       const ns=sel.map(g=>`${g}: ${(nG(dim,g)||0).toLocaleString("es-ES")}`).join(" · ");
-      document.getElementById(id("nota")).textContent=`${C.nota} Barómetro de ${xl(R.fechas[ol])} (estudio ${R.estudios[ol]}). Entrevistas: total ${(nG("total","Total")||0).toLocaleString("es-ES")}${ns?" · "+ns:""}. La línea discontinua es el total de la población.${med==="idx"?" Índice = % del grupo ÷ % del total × 100.":""}`;
+      document.getElementById(id("nota")).textContent=`${C.nota} Barómetro de ${xl(R.fechas[ol])} (estudio ${R.estudios[ol]}). Entrevistas: total ${(nG("total","Total")||0).toLocaleString("es-ES")}${ns?" · "+ns:""}. Índice = % del grupo ÷ % del total × 100.`;
       const filas=[["Total de la población",tot],...series.map(s=>[s.g,s.v])];
-      document.getElementById(id("tabla")).innerHTML=`<table><thead><tr><th>%</th>${EJ.map(e=>`<th>${nomb(e)}</th>`).join("")}</tr></thead><tbody>${
+      document.getElementById(id("tabla")).innerHTML=`<table><thead><tr><th>%</th>${EJ.map(e=>`<th>${C.corto(e.n)}</th>`).join("")}</tr></thead><tbody>${
         filas.map(([g,v])=>`<tr><td>${g}</td>${v.map(x=>`<td class="${x==null?"na":""}">${nf(x)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
     }
     let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(pinta,200);});

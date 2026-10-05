@@ -5,6 +5,8 @@
 # Para cada barómetro y cada grupo de población calcula:
 #   - partidos: % de voto + simpatía (VOTOSIMG) de los seis partidos estatales
 #   - intencion: % de intención directa de voto (INTENCIONGR) de los mismos partidos
+#   - problemas: % que menciona cada problema de España entre sus tres principales
+#                (PESPANNA1-3, total de menciones); se guardan los N_PROBLEMAS más citados por el total
 # Porcentajes sobre el total de entrevistados del grupo, ponderados con PESO.
 #
 # Uso:
@@ -25,6 +27,8 @@ fecha_archivo <- function(f) {
   sprintf("20%s-%02d", p[2], MESES_ARCHIVO[[p[1]]])
 }
 
+N_PROBLEMAS <- 15            # problemas guardados por barómetro (los más citados por el total)
+RESIDUALES <- c("Otras respuestas", "Ninguno", "N.S.", "N.C.")
 EJES_PARTIDOS <- c("PSOE", "PP", "VOX", "Sumar", "Podemos", "Se Acabó la Fiesta")
 
 DIMS <- list(
@@ -77,7 +81,8 @@ pcts <- function(resp, w, sel, ejes) {
 calcular_radar <- function(archivos) {
   fechas <- vapply(archivos, fecha_archivo, ""); o <- order(fechas)
   archivos <- archivos[o]; fechas <- unname(fechas[o])
-  res <- list(partidos = list(), intencion = list(), n = list())
+  res <- list(partidos = list(), intencion = list(), problemas = list(), n = list())
+  prob_nombres <- list()
   estudios <- integer()
   for (k in seq_along(archivos)) {
     d <- suppressWarnings(read_sav(archivos[k])); names(d) <- toupper(names(d))
@@ -88,12 +93,26 @@ calcular_radar <- function(archivos) {
     it <- norm(etiqueta(d$INTENCIONGR))   # intención directa de voto
     # Partidos que aún no aparecen en el cuestionario (p. ej. Podemos dentro de Sumar en 2023) -> null
     sin_p <- !EJES_PARTIDOS %in% vs; sin_i <- !EJES_PARTIDOS %in% it
+    # Problemas: matriz entrevistado x problema (1 si lo cita entre sus tres primeros)
+    pv <- sapply(paste0("PESPANNA", 1:3), function(v) as.numeric(d[[v]]))
+    lp <- attr(d$PESPANNA1, "labels"); lp <- lp[!duplicated(as.numeric(lp))]
+    nom_p <- enc2utf8(names(lp)); cod_p <- as.numeric(lp)
+    ok_p <- !(nom_p %in% RESIDUALES) & cod_p < 996
+    nom_p <- nom_p[ok_p]; cod_p <- cod_p[ok_p]
+    M <- sapply(cod_p, function(cc) as.numeric(rowSums(pv == cc, na.rm = TRUE) > 0))
+    colnames(M) <- nom_p
+    pct_p <- function(sel) if (sum(sel) == 0) rep(NA_real_, length(top)) else
+      unname(round(100 * colSums(M[sel, top, drop = FALSE] * w[sel]) / sum(w[sel]), 1))
+    tot_p <- colSums(M * w) / sum(w)
+    top <- names(sort(tot_p, decreasing = TRUE))[seq_len(min(N_PROBLEMAS, length(tot_p)))]
+    prob_nombres[[k]] <- as.list(top)
     G <- grupos_de(d)
     todos <- rep(TRUE, nrow(d))
     pp <- pcts(vs, w, todos, EJES_PARTIDOS); pp[sin_p] <- NA
     res$partidos$total$Total[[k]] <- pp
     ii <- pcts(it, w, todos, EJES_PARTIDOS); ii[sin_i] <- NA
     res$intencion$total$Total[[k]] <- ii
+    res$problemas$total$Total[[k]] <- pct_p(todos)
     res$n$total$Total[k] <- nrow(d)
     for (dm in DIMS) for (g in dm$grupos) {
       sel <- !is.na(G[[dm$id]]) & G[[dm$id]] == g
@@ -101,6 +120,7 @@ calcular_radar <- function(archivos) {
       res$partidos[[dm$id]][[g]][[k]] <- pp
       ii <- pcts(it, w, sel, EJES_PARTIDOS); ii[sin_i] <- NA
       res$intencion[[dm$id]][[g]][[k]] <- ii
+      res$problemas[[dm$id]][[g]][[k]] <- pct_p(sel)
       res$n[[dm$id]][[g]][k] <- sum(sel)
     }
     message(fechas[k], " (", estudios[k], "): ", nrow(d), " entrevistas")
@@ -113,6 +133,7 @@ calcular_radar <- function(archivos) {
                   function(dm) list(id = dm$id, nombre = dm$nombre, grupos = as.list(dm$grupos))),
     ejes_partidos = as.list(EJES_PARTIDOS),
     partidos = lista(res$partidos), intencion = lista(res$intencion),
+    problemas_nombres = prob_nombres, problemas = lista(res$problemas),
     n = lapply(res$n, function(dm) lapply(dm, as.list))
   )
 }
