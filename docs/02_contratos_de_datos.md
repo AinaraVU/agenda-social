@@ -34,6 +34,7 @@ Alimenta la ficha de cabecera de cada pestaña («34 barómetros · De septiembr
 | `cis_probvoto` | CIS · Análisis del voto | fechas, estudios, cols, grupos, datos |
 | `cis_vsperfil` | CIS · Análisis del voto | fechas, estudios, orden, vars, datos |
 | `cis_transfer` | CIS · Análisis del voto | fechas, estudios, origenes, destinos, datos |
+| `cis_radar` | CIS · Análisis del voto (radares) | fechas, estudios, dims, ejes_partidos, partidos, intencion, n |
 | `cis_prefpte` | CIS · Líderes | fechas, estudios, base_n, orden, series |
 | `cis_aprobacion` | CIS · Líderes | fecha, fecha_ant, estudio, lideres |
 | `cis_valoracion` | CIS · Líderes | fechas, estudios, lideres, vars, datos |
@@ -51,6 +52,8 @@ Alimenta la ficha de cabecera de cada pestaña («34 barómetros · De septiembr
 | `soc_cuadrantes` | Sociómetro · Identidad e ideología | fechas, eleccion, puntos |
 
 El `data.json` publicado actualmente es la **referencia**: cualquier versión nueva tiene que tener la misma forma. `R/comprobar_data_json.R` lo verifica campo a campo (bloques que faltan, tipos que cambian, número de oleadas que baja) antes de subir nada.
+
+`cis_radar` lo genera `R/radar_cis.R`: para cada barómetro, grupo de población (sexo, edad, estudios, clase, ideología, recuerdo 2023, hábitat, situación laboral) y partido (PSOE, PP, VOX, Sumar, Podemos, SALF), el % de voto + simpatía (`partidos`, VOTOSIMG) y de intención directa (`intencion`, INTENCIONGR) sobre el total del grupo, ponderado con PESO. `partidos.<dim>.<grupo>` es una lista por barómetro con los seis valores en el orden de `ejes_partidos`; `n` da las entrevistas de cada grupo.
 
 Si un bloque falta, su tarjeta simplemente no se dibuja (el código hace `if(!DATA.x) return`).
 

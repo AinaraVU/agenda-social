@@ -1,6 +1,6 @@
-# Agenda social Euskadi
+# Monitor de la opinión pública
 
-Dashboard de opinión pública de **Silván & Miracle** con tres fuentes:
+Dashboard de opinión pública de **Silván & Miracle** con tres pestañas: **Evolución encuestas** (promedio), **Barómetro del CIS** y **Sociómetro Vasco**. Fuentes:
 
 | Fuente | Qué aporta | Cómo se actualiza |
 |---|---|---|
@@ -41,6 +41,7 @@ agenda-social/
 │   ├── actualizar_local.R   # revisión diaria de datos/: detecta, procesa, comprueba y sube
 │   ├── procesar_cis.R       # (plantilla) aquí va el código de procesado del CIS
 │   ├── procesar_sociometro.R# (plantilla) aquí va el del Sociómetro
+│   ├── radar_cis.R          # bloque cis_radar (radares por grupo) a partir de los .sav del CIS
 │   ├── comprobar_data_json.R# compara la estructura de un data.json nuevo con el publicado
 │   └── promedio.R           # scraping + media ponderada
 ├── .github/workflows/

@@ -8,7 +8,7 @@ Referencia visual obligatoria: [referencia_grafico_promedio.png](referencia_graf
 
 ## Ubicación
 
-- Pestaña **Barómetro del CIS → Análisis del voto** (`#grid-cis-voto`).
+- Pestaña propia **Evolución encuestas** (`#tab-enc`, `#grid-enc`), la primera del dashboard y la que se abre por defecto. Enlace directo: `#encuestas`.
 - **Primera tarjeta**, ancho completo (`card` sin `span`), por encima de la intención de voto del CIS. Como las tarjetas se añaden en el orden en que se ejecuta `app.js`, insertar con `grid.prepend(card)`.
 - Si `promedio.json` no existe o falla, la tarjeta no aparece y el resto de la pestaña funciona igual.
 

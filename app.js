@@ -50,8 +50,8 @@ function showTab(t){
   Object.values(charts).forEach(c=>c.resize());
 }
 document.querySelectorAll("nav.main-tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
-let t0="cis"; try{const s=localStorage.getItem("ase.tab"); if(s==="cis"||s==="soc")t0=s;}catch(e){}
-if(location.hash.startsWith("#sociometro"))t0="soc"; else if(location.hash.startsWith("#cis"))t0="cis";
+let t0="enc"; try{const s=localStorage.getItem("ase.tab"); if(s==="enc"||s==="cis"||s==="soc")t0=s;}catch(e){}
+if(location.hash.startsWith("#sociometro"))t0="soc"; else if(location.hash.startsWith("#cis"))t0="cis"; else if(location.hash.startsWith("#encuestas"))t0="enc";
 
 /* Subpestañas de cada fuente (CIS y Sociómetro) */
 function showSub(src,k){
@@ -288,76 +288,116 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   notaPerfil:{voto:"Recuerdo de la elección que pregunta cada oleada (autonómicas 2020 o 2024, o Juntas Generales 2019 o 2023): ver subtítulo. PP incluye PP+Ciudadanos (2020). «Otros partidos»: Elkarrekin Podemos, Sumar, Vox y otras candidaturas. Sin blanco, nulo, sin derecho a voto, NS ni NC.",
     clase:"Clase social subjetiva en tres categorías (así la pregunta el Sociómetro); sin NS/NC."}});
 
-/* ===================== CIS · Análisis del voto: intención directa ===================== */
+/* ===================== CIS · Radares por grupo de población (bloque cis_radar, R/radar_cis.R) ===================== */
+/* Dos radares con la misma mecánica: ejes = partidos, en voto + simpatía o en intención directa de voto;
+   cada polígono es un grupo de población; el total de la población va siempre como referencia discontinua. */
 (function(){
-  const V=DATA.cis_intencion, grid=document.getElementById("grid-cis-voto"); if(!V||!grid)return;
-  grid.innerHTML=`
-    <div class="card">
-      <div class="card-head"><div><h3>Evolución del voto</h3><p class="subt" id="cv-subt"></p></div>
-        <button class="export-btn" id="cv-export-btn" data-chart="cv-ch" data-name="cis_intencion_directa" hidden>⬇ PNG</button></div>
-      <div class="ctrls"><div class="seg" id="cv-medida" role="group" aria-label="Medida">
-        <button type="button" data-v="intencion" aria-pressed="true">Intención directa de voto</button>
-        <button type="button" data-v="votosim" aria-pressed="false">Voto + simpatía</button></div></div>
-      <div class="chips" id="cv-chips"></div>
-      <div class="chart tall" id="cv-ch"></div>
-      <p class="foot-note" id="cv-nota"></p>
-      <details class="tabla"><summary>Ver los datos en tabla</summary><div class="tabla-wrap" id="cv-tabla"></div></details>
-    </div>`;
-  const COLOR={...PARTY_COLORS,"Se Acabó la Fiesta":"#6D4C41","Otros partidos":"#C9C5B8","En blanco":"#B8B2A0","Voto nulo":"#8C8676",
-    "No votaría":"#1A1A1A","Ninguno / no votaría":"#1A1A1A","No sabe todavía":"#7C8C8A","N.S.":"#7C8C8A","N.C.":"#A9B4B2"};
-  let med="intencion"; const M=()=>V.medidas[med];
-  // equivalencias al cambiar de medida (mismas respuestas, distinto nombre)
-  const EQ={"No votaría":"Ninguno / no votaría","Ninguno / no votaría":"No votaría","No sabe todavía":"N.S.","N.S.":"No sabe todavía"};
-  const DEF=["PSOE","PP","VOX","Sumar","Podemos"];
+  const R=DATA.cis_radar, grid=document.getElementById("grid-cis-voto"); if(!R||!grid)return;
+  const COLP={...PARTY_COLORS,"Se Acabó la Fiesta":"#6D4C41"};
+  const GCOL=["#014550","#FF723C","#8739E5","#F6BD32"];          // colores de los grupos (paleta S&M)
+  const nf=v=>v==null?"–":v.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
   const MES3=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-  const xl=f=>`${MES3[+f.slice(5)-1]} ${f.slice(2,4)}`;
-  const nf=(v,d=1)=>v==null?"–":v.toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
-  const last=V.fechas.length-1, MAX=10;
-  let sel=[...DEF];
-  const ch=mkChart("cv-ch"), esMovil=()=>window.innerWidth<640;
-  const tt={backgroundColor:"#fff",borderColor:SM.c.grid,borderWidth:1,textStyle:{color:SM.c.tinta,fontFamily:SM.sans,fontSize:12},extraCssText:"box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:3px"};
-  function chips(){
-    const el=document.getElementById("cv-chips"), resto=M().orden.filter(g=>!sel.includes(g));
-    el.innerHTML=sel.map(g=>`<span class="chip"><span class="sw" style="background:${COLOR[g]}"></span><span class="nm">${g}</span><button type="button" data-q="${encodeURIComponent(g)}" aria-label="Quitar ${g}">×</button></span>`).join("")
-      +(sel.length<MAX&&resto.length?`<select class="add-sel" aria-label="Añadir"><option value="">+ Añadir…</option>${resto.map(g=>`<option value="${encodeURIComponent(g)}">${g} (${nf(M().series[g][last])} %)</option>`).join("")}</select>`:"")
-      +`<button type="button" class="link-btn">Restablecer</button>`;
-    el.querySelectorAll(".chip button").forEach(x=>x.addEventListener("click",()=>{sel=sel.filter(g=>g!==decodeURIComponent(x.dataset.q));pinta();}));
-    const a=el.querySelector("select"); if(a)a.addEventListener("change",()=>{if(a.value){sel.push(decodeURIComponent(a.value));sel.sort((x,y)=>M().orden.indexOf(x)-M().orden.indexOf(y));pinta();}});
-    el.querySelector(".link-btn").addEventListener("click",()=>{sel=[...DEF];pinta();});
-  }
-  document.querySelectorAll("#cv-medida button").forEach(b=>b.addEventListener("click",()=>{
-    med=b.dataset.v; document.querySelectorAll("#cv-medida button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-    sel=sel.map(g=>M().orden.includes(g)?g:EQ[g]).filter(g=>g&&M().orden.includes(g)); pinta();}));
-  function pinta(){
-    const mov=esMovil();
-    document.getElementById("cv-export-btn")?.setAttribute("data-name",`cis_${med==="intencion"?"intencion_directa":"voto_simpatia"}`);
-    document.getElementById("cv-subt").textContent=(med==="intencion"?"Intención directa de voto en unas supuestas elecciones generales":"Voto + simpatía en unas supuestas elecciones generales")+` · % sobre el total de entrevistados · ${labL(V.fechas[0])} – ${labL(V.fechas[last])}`;
-    chips();
-    const o=smBaseOption();
-    o.grid={left:8,right:mov?16:150,top:16,bottom:34,containLabel:true};
-    o.tooltip={...tt,trigger:"axis",axisPointer:{type:"line",lineStyle:{color:SM.c.subtle,width:1}},
-      formatter:ps=>{const i=ps[0].dataIndex;const rows=ps.filter(p=>p.value!=null).sort((a,c)=>c.value-a.value)
-        .map(p=>`<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span><span style="display:inline-block;width:10px;height:3px;border-radius:2px;background:${p.color};margin-right:6px;vertical-align:middle"></span>${p.seriesName}</span><b>${nf(p.value)} %</b></div>`).join("");
-        return `<div style="font-weight:600;margin-bottom:4px">${labL(V.fechas[i])} · estudio ${V.estudios[i]} · N=${V.base_n[i].toLocaleString("es-ES")}</div>${rows}`;}};
-    o.xAxis={type:"category",data:V.fechas.map(xl),boundaryGap:false,axisLine:{lineStyle:{color:SM.c.grid}},axisTick:{show:false},
-      axisLabel:{color:SM.c.subtle,fontSize:11,interval:mov?5:2,hideOverlap:true}};
-    o.yAxis={type:"value",min:0,axisLabel:{color:SM.c.subtle,fontSize:11,formatter:v=>v+" %"},splitLine:{lineStyle:{color:"#EEEBE3"}}};
-    o.series=sel.map(g=>({name:g,type:"line",data:M().series[g],connectNulls:false,showSymbol:false,symbolSize:8,
-      lineStyle:{width:2,color:COLOR[g]},itemStyle:{color:COLOR[g]},emphasis:{focus:"series",lineStyle:{width:3}},
-      endLabel:{show:!mov,formatter:p=>`${g}  ${nf(p.value)}`,color:SM.c.tinta,fontSize:11.5,distance:6},labelLayout:{moveOverlap:"shiftY"}}));
-    ch.setOption(o,true);
-    document.getElementById("cv-nota").textContent=(med==="intencion"
-        ?"Fuente: Barómetros del CIS (microdatos), intención directa recodificada por el CIS (INTENCIONGR), ponderada con PESO; coincide con el avance de resultados. Base: total de personas entrevistadas (incluye no votaría, no sabe todavía, en blanco, nulo y N.C.). "
-        :"Fuente: Barómetros del CIS (microdatos), voto + simpatía (VOTOSIMG, codificación del CIS), ponderado con PESO; coincide con el avance de resultados. Voto + simpatía: intención directa y, si no se menciona partido, el partido por el que se siente más simpatía. Base: total de personas entrevistadas. En mayo de 2024 el CIS rebautiza «No votaría» como «Ninguno» y «No sabe todavía» como «N.S.» (mismos códigos). ")+
-      "Sin estimación de voto («cocina»). "+
-      "Sumar incluye a sus socios (IU, Compromís, Más Madrid…); hasta diciembre de 2023 el CIS cuenta también a Podemos dentro de Sumar. Se Acabó la Fiesta, desde junio de 2024. "+
-      "Los partidos autonómicos declarados fuera de su comunidad cuentan en «Otros partidos». El CIS no hace barómetro en agosto.";
-    const idx=V.fechas.map((_,i)=>i).reverse();
-    document.getElementById("cv-tabla").innerHTML=`<table><thead><tr><th>${med==="intencion"?"Intención directa":"Voto + simpatía"} (%)</th>${idx.map(i=>`<th>${xl(V.fechas[i])}</th>`).join("")}</tr></thead><tbody>${
-      sel.map(g=>`<tr><td>${g}</td>${idx.map(i=>{const v=M().series[g][i];return `<td class="${v==null?"na":""}">${nf(v)}</td>`}).join("")}</tr>`).join("")}</tbody></table>`;
-  }
-  let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(pinta,200);});
-  if(ch)pinta();
+  const xl=f=>`${MES3[+f.slice(5)-1]} ${f.slice(0,4)}`;
+  const DIMS=R.dims.filter(d=>d.id!=="total");
+  // grupos que se marcan al cambiar de variable: los extremos, para ver el contraste
+  const DEF={edad:["18-24","65 y más"],ideologia:["Izquierda (1-2)","Centro (5-6)","Derecha (9-10)"],recuerdo:["PSOE","PP","VOX"],
+    sexo:["Hombre","Mujer"],estudios:["Sin estudios o primaria","Superiores"],clase:["Alta y media alta","Trabajadora/obrera"],
+    habitat:["Hasta 10.000 hab.","Más de 400.000"],laboral:["Trabaja","Jubilado/a o pensionista","Estudiante"]};
+  const CFG=[
+    // orden de los ejes alrededor del radar: de izquierda a derecha, para que los grupos «se inclinen» hacia su lado
+    {id:"rp",clave:"partidos",ejes:R.ejes_partidos,orden:["PSOE","Sumar","Podemos","Se Acabó la Fiesta","VOX","PP"],dim0:"edad",titulo:"¿Con qué partido simpatiza cada grupo?",
+     subt:"Voto + simpatía en unas elecciones generales · cada grupo frente al total de la población",
+     corto:{"Se Acabó la Fiesta":"SALF"},
+     nota:"Fuente: Barómetros del CIS (microdatos), voto + simpatía (VOTOSIMG) ponderado con PESO. Base: total de personas entrevistadas de cada grupo (incluye ninguno, no sabe, en blanco y otros partidos, que no se dibujan). Podemos y SALF no aparecen por separado hasta 2024."},
+    {id:"ri",clave:"intencion",ejes:R.ejes_partidos,orden:["PSOE","Sumar","Podemos","Se Acabó la Fiesta","VOX","PP"],dim0:"ideologia",titulo:"¿A qué partido votaría cada grupo?",
+     subt:"Intención directa de voto en unas elecciones generales · cada grupo frente al total de la población",
+     corto:{"Se Acabó la Fiesta":"SALF"},
+     nota:"Fuente: Barómetros del CIS (microdatos), intención directa de voto recodificada por el CIS (INTENCIONGR), ponderada con PESO, sin estimación («cocina»). Base: total de personas entrevistadas de cada grupo (incluye no votaría, no sabe, en blanco y otros partidos, que no se dibujan). Podemos y SALF no aparecen por separado hasta 2024."}
+  ];
+  CFG.forEach(C=>{
+    const id=k=>`${C.id}-${k}`;
+    const card=document.createElement("div"); card.className="card span6";
+    card.innerHTML=`
+      <div class="card-head"><div><h3>${C.titulo}</h3><p class="subt">${C.subt}</p></div>
+        <button class="export-btn" data-chart="${id("ch")}" data-name="cis_radar_${C.clave}">⬇ PNG</button></div>
+      <div class="ctrls">
+        <label class="sel-lab">Grupos por <select id="${id("dim")}" class="sel">${DIMS.map(d=>`<option value="${d.id}"${d.id===C.dim0?" selected":""}>${d.nombre}</option>`).join("")}</select></label>
+        <div class="seg" id="${id("med")}" role="group" aria-label="Medida"><button type="button" data-v="idx" aria-pressed="true">Índice (total = 100)</button><button type="button" data-v="pct" aria-pressed="false">% del grupo</button></div>
+        <label class="sel-lab">Barómetro <select id="${id("ol")}" class="sel">${R.fechas.map((f,i)=>`<option value="${i}"${i===R.fechas.length-1?" selected":""}>${xl(f)}</option>`).join("")}</select></label>
+      </div>
+      <div class="chips" id="${id("chips")}"></div>
+      <div class="explica" id="${id("exp")}"></div>
+      <div class="chart" id="${id("ch")}" style="height:430px"></div>
+      <p class="foot-note" id="${id("nota")}"></p>
+      <details class="tabla"><summary>Ver los datos en tabla</summary><div class="tabla-wrap" id="${id("tabla")}"></div></details>`;
+    grid.appendChild(card);
+    const ch=mkChart(id("ch")); if(!ch)return;
+    let dim=C.dim0, sel=[...(DEF[dim]||[])], ol=R.fechas.length-1, med="idx";
+    document.querySelectorAll(`#${id("med")} button`).forEach(b=>b.addEventListener("click",()=>{med=b.dataset.v;
+      document.querySelectorAll(`#${id("med")} button`).forEach(x=>x.setAttribute("aria-pressed",x===b)); pinta();}));
+    const grupos=()=>DIMS.find(d=>d.id===dim).grupos;
+    const EJ=C.orden.filter(e=>C.ejes.includes(e)), IX=EJ.map(e=>C.ejes.indexOf(e));
+    const vals=(d,g)=>{const v=R[C.clave][d]?.[g]?.[ol]; return v?IX.map(i=>v[i]):EJ.map(()=>null);};
+    const nG=(d,g)=>R.n[d]?.[g]?.[ol];
+    function chips(){
+      const el=document.getElementById(id("chips"));
+      el.innerHTML=grupos().map(g=>{const k=sel.indexOf(g), on=k>=0;
+        return `<button type="button" class="chip chip-tg${on?" on":""}" data-g="${encodeURIComponent(g)}" aria-pressed="${on}" ${!on&&sel.length>=4?"disabled":""}>
+          <span class="sw" style="background:${on?GCOL[k]:"#C9C5B8"}"></span><span class="nm">${g}</span></button>`;}).join("");
+      el.querySelectorAll(".chip-tg").forEach(b=>b.addEventListener("click",()=>{const g=decodeURIComponent(b.dataset.g);
+        sel=sel.includes(g)?sel.filter(x=>x!==g):[...sel,g]; pinta();}));
+    }
+    document.getElementById(id("dim")).addEventListener("change",e=>{dim=e.target.value; sel=[...(DEF[dim]||grupos().slice(0,2))]; pinta();});
+    document.getElementById(id("ol")).addEventListener("change",e=>{ol=+e.target.value; pinta();});
+    function pinta(){
+      chips();
+      const mov=window.innerWidth<640, tot=vals("total","Total");
+      const hh=mov?340:430; if(ch.getHeight()&&ch.getHeight()!==hh){document.getElementById(id("ch")).style.height=hh+"px";ch.resize();}
+      const series=sel.map((g,k)=>({g,k,v:vals(dim,g)}));
+      // índice: % del grupo / % del total × 100 (100 = igual que el conjunto de la población)
+      const idx=v=>v.map((x,i)=>x==null||!tot[i]?null:Math.round(1000*x/tot[i])/10);
+      const dib=v=>med==="idx"?idx(v):v;            // valores dibujados
+      const totD=med==="idx"?tot.map(x=>x?100:null):tot;
+      let mx=Math.max(...totD.filter(v=>v!=null),...series.flatMap(s=>dib(s.v).filter(v=>v!=null)),1);
+      const max=med==="idx"?Math.min(Math.max(200,Math.ceil(mx/50)*50),400):(mx<=20?Math.ceil(mx/5)*5:Math.ceil(mx/10)*10);
+      const nomb=e=>C.corto[e]||e, rich={};
+      EJ.forEach((e,i)=>rich["e"+i]={color:COLP[e]||SM.c.tinta,fontWeight:600,fontSize:mov?10.5:12});
+      const o=smBaseOption();
+      o.legend={show:false};
+      const paso=med==="idx"?50:(max<=20?5:10);
+      o.radar={center:["50%","53%"],radius:mov?"62%":"68%",splitNumber:Math.round(max/paso),shape:"polygon",
+        indicator:EJ.map(e=>({name:e,max})),
+        axisName:{formatter:(n)=>{const i=EJ.indexOf(n);return `{e${i}|${nomb(n)}}`;},rich},
+        splitLine:{lineStyle:{color:"#E4E0D6"}},splitArea:{areaStyle:{color:["#FFFFFF","#FAF8F3"]}},axisLine:{lineStyle:{color:"#E4E0D6"}},
+        axisLabel:{show:false},
+      };
+      o.tooltip={backgroundColor:"#fff",borderColor:SM.c.grid,borderWidth:1,confine:true,textStyle:{color:SM.c.tinta,fontFamily:SM.sans,fontSize:12},
+        extraCssText:"box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:3px",
+        formatter:p=>{const v=p.data.raw, ix=idx(v), ord=EJ.map((e,i)=>({e,v:v[i],x:ix[i]})).filter(r=>r.v!=null).sort((a,b)=>b.v-a.v);
+          return `<div style="font-weight:600;margin-bottom:4px">${p.name}</div>`+ord.map(r=>`<div style="display:flex;gap:12px;justify-content:space-between"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLP[r.e]};margin-right:6px"></span>${r.e}</span><span><b>${nf(r.v)} %</b>${med==="idx"&&r.x!=null?` <span style="color:${SM.c.subtle}">· índice ${Math.round(r.x)}</span>`:""}</span></div>`).join("");}};
+      o.series=[{type:"radar",symbol:"circle",symbolSize:mov?4:5,data:[
+        {name:"Total de la población",value:totD.map(v=>v==null?0:Math.min(v,max)),raw:tot,lineStyle:{color:"#8C8676",width:1.5,type:"dashed"},itemStyle:{color:"#8C8676"},areaStyle:{opacity:0},z:1},
+        ...series.map(s=>({name:s.g,value:dib(s.v).map(v=>v==null?0:Math.min(v,max)),raw:s.v,lineStyle:{color:GCOL[s.k],width:2.5},itemStyle:{color:GCOL[s.k]},areaStyle:{color:GCOL[s.k],opacity:.14}}))
+      ],emphasis:{lineStyle:{width:3.5},areaStyle:{opacity:.3}}}];
+            o.graphic=[smLogoGraphic(),{type:"text",left:8,bottom:6,silent:true,style:{text:med==="idx"?`Cada anillo: ${paso} · borde: ${max} (valores mayores se recortan)`:`Cada anillo: ${paso} puntos · borde: ${max} %`,fill:SM.c.subtle,fontSize:10.5,fontFamily:SM.sans}}];
+      ch.setOption(o,true);
+      // explicación del índice con un ejemplo real: el grupo y partido con el índice más alto
+      const ex=document.getElementById(id("exp"));
+      if(med==="idx"){
+        let best=null; series.forEach(s=>idx(s.v).forEach((x,i)=>{if(x!=null&&tot[i]>=2&&(!best||x>best.x))best={g:s.g,e:EJ[i],x,v:s.v[i],t:tot[i]};}));
+        ex.hidden=false;
+        ex.innerHTML=`<b>Cómo se lee el índice.</b> Compara cada grupo con el conjunto de la población. <b>100</b> (la línea discontinua) significa que el grupo apoya a ese partido igual que la media; <b>200</b>, el doble; <b>50</b>, la mitad. Cuanto más sale un vértice del polígono discontinuo, más destaca ese partido en el grupo.`+
+          (best?` <span class="ej">Ejemplo: ${best.g} · ${nomb(best.e)} = ${nf(best.v)} % frente al ${nf(best.t)} % del total → índice ${Math.round(best.x)}.</span>`:"");
+      } else ex.hidden=true;
+      const ns=sel.map(g=>`${g}: ${(nG(dim,g)||0).toLocaleString("es-ES")}`).join(" · ");
+      document.getElementById(id("nota")).textContent=`${C.nota} Barómetro de ${xl(R.fechas[ol])} (estudio ${R.estudios[ol]}). Entrevistas: total ${(nG("total","Total")||0).toLocaleString("es-ES")}${ns?" · "+ns:""}. La línea discontinua es el total de la población.${med==="idx"?" Índice = % del grupo ÷ % del total × 100.":""}`;
+      const filas=[["Total de la población",tot],...series.map(s=>[s.g,s.v])];
+      document.getElementById(id("tabla")).innerHTML=`<table><thead><tr><th>%</th>${EJ.map(e=>`<th>${nomb(e)}</th>`).join("")}</tr></thead><tbody>${
+        filas.map(([g,v])=>`<tr><td>${g}</td>${v.map(x=>`<td class="${x==null?"na":""}">${nf(x)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    }
+    let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(pinta,200);});
+    pinta();
+  });
 })();
 
 /* ===================== CIS · Probabilidad de ir a votar × recuerdo de voto (mapa de calor) ===================== */
@@ -404,163 +444,6 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     document.getElementById("pv-nota").textContent="Fuente: Barómetros del CIS (microdatos), ponderados con PESO. Escala de probabilidad de ir a votar en unas elecciones generales: 0 = con toda seguridad no iría a votar, 10 = con toda seguridad iría a votar. "+
       "Recuerdo de voto en las generales de 2023. «Otros partidos»: ERC, Junts, EH Bildu, EAJ-PNV, BNG, CCa, UPN, PACMA y otros. Sin «no tenía derecho a voto», N.R. ni N.C. del recuerdo. "+
       (esMovil()?"En el móvil, desliza el mapa hacia los lados para ver toda la escala. ":"")+"No se muestran N.S. ni N.C. (entre 0 y 1 % en cada grupo), por eso las filas pueden no sumar exactamente 100; la media también los excluye. Naranja = % más alto; verde = % más bajo, en escala logarítmica para distinguir mejor los valores pequeños. "+(peq.some(Boolean)?"* Grupo con menos de 100 entrevistas: tómese con cautela. ":"");
-  }
-  let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(pinta,200);});
-  pinta();
-})();
-
-/* ===================== CIS · Voto + simpatía por perfil (evolutivo por grupo) ===================== */
-(function(){
-  const VP=DATA.cis_vsperfil, grid=document.getElementById("grid-cis-voto"); if(!VP||!grid)return;
-  const card=document.createElement("div"); card.className="card";
-  card.innerHTML=`
-      <div class="card-head"><div><h3>Evolución del voto + simpatía por perfil <span class="badge-prov" title="Gráfico en revisión">Provisional</span></h3><p class="subt" id="vp-subt"></p></div>
-        <button class="export-btn" id="vp-export" data-chart="vp-ch" data-name="cis_votosim_perfil" hidden>⬇ PNG</button></div>
-      <div class="ctrls"><label class="sel-lab">Cruzar por <select id="vp-var" class="sel"></select></label></div>
-      <div class="ctrls"><div class="seg seg-wrap" id="vp-grupo" role="group" aria-label="Grupo"></div></div>
-      <div class="chips" id="vp-chips"></div>
-      <div class="chart tall" id="vp-ch"></div>
-      <p class="foot-note" id="vp-nota"></p>
-      <details class="tabla"><summary>Ver los datos en tabla</summary><div class="tabla-wrap" id="vp-tabla"></div></details>`;
-  grid.appendChild(card);
-  const COLOR={...PARTY_COLORS,"Se Acabó la Fiesta":"#6D4C41","Otros partidos":"#C9C5B8","En blanco":"#B8B2A0","Voto nulo":"#8C8676",
-    "Ninguno / no votaría":"#1A1A1A","N.S.":"#7C8C8A","N.C.":"#A9B4B2"};
-  const DEF=["PSOE","PP","VOX","Sumar","Podemos"], MAX=10;
-  const MES3=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-  const xl=f=>`${MES3[+f.slice(5)-1]} ${f.slice(2,4)}`;
-  const nf=(v,d=1)=>v==null?"–":v.toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
-  const last=VP.fechas.length-1;
-  let v=VP.vars[0].id, g=VP.vars[0].grupos[0], sel=[...DEF];
-  const selV=document.getElementById("vp-var");
-  selV.innerHTML=VP.vars.map(x=>`<option value="${x.id}">${x.nombre}</option>`).join("");
-  selV.addEventListener("change",()=>{v=selV.value;g=VP.vars.find(x=>x.id===v).grupos[0];botones();pinta();});
-  function botones(){
-    const el=document.getElementById("vp-grupo"), gs=VP.vars.find(x=>x.id===v).grupos;
-    el.innerHTML=gs.map(x=>`<button type="button" data-v="${encodeURIComponent(x)}" aria-pressed="${x===g}">${x}</button>`).join("");
-    el.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{g=decodeURIComponent(b.dataset.v);
-      el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));pinta();}));
-  }
-  const ch=mkChart("vp-ch"), esMovil=()=>window.innerWidth<640;
-  const tt={backgroundColor:"#fff",borderColor:SM.c.grid,borderWidth:1,textStyle:{color:SM.c.tinta,fontFamily:SM.sans,fontSize:12},extraCssText:"box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:3px"};
-  function chips(D){
-    const el=document.getElementById("vp-chips"), resto=VP.orden.filter(p=>!sel.includes(p));
-    el.innerHTML=sel.map(p=>`<span class="chip"><span class="sw" style="background:${COLOR[p]}"></span><span class="nm">${p}</span><button type="button" data-q="${encodeURIComponent(p)}" aria-label="Quitar ${p}">×</button></span>`).join("")
-      +(sel.length<MAX&&resto.length?`<select class="add-sel" aria-label="Añadir"><option value="">+ Añadir…</option>${resto.map(p=>`<option value="${encodeURIComponent(p)}">${p} (${nf(D.series[p][last])} %)</option>`).join("")}</select>`:"")
-      +`<button type="button" class="link-btn">Restablecer</button>`;
-    el.querySelectorAll(".chip button").forEach(x=>x.addEventListener("click",()=>{sel=sel.filter(p=>p!==decodeURIComponent(x.dataset.q));pinta();}));
-    const a=el.querySelector("select"); if(a)a.addEventListener("change",()=>{if(a.value){sel.push(decodeURIComponent(a.value));sel.sort((x,y)=>VP.orden.indexOf(x)-VP.orden.indexOf(y));pinta();}});
-    el.querySelector(".link-btn").addEventListener("click",()=>{sel=[...DEF];pinta();});
-  }
-  function pinta(){
-    if(!ch)return;
-    const D=VP.datos[v][g], mov=esMovil(), nom=VP.vars.find(x=>x.id===v).nombre;
-    const peq=D.n.map(n=>n!=null&&n<100), hayPeq=peq.some(Boolean);
-    document.getElementById("vp-subt").textContent=`Voto + simpatía entre: ${nom.toLowerCase()} · ${g} · % sobre el total del grupo · ${labL(VP.fechas[0])} – ${labL(VP.fechas[last])} · último barómetro: n = ${D.n[last].toLocaleString("es-ES")}`;
-    document.getElementById("vp-export").dataset.name=`cis_votosim_${v}_${g.replace(/[^\wáéíóúñ]+/gi,"_")}`;
-    chips(D);
-    const o=smBaseOption();
-    o.grid={left:8,right:mov?16:150,top:16,bottom:34,containLabel:true};
-    o.tooltip={...tt,trigger:"axis",axisPointer:{type:"line",lineStyle:{color:SM.c.subtle,width:1}},
-      formatter:ps=>{const i=ps[0].dataIndex;const rows=ps.filter(p=>p.value!=null).sort((a,c)=>c.value-a.value)
-        .map(p=>`<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span><span style="display:inline-block;width:10px;height:3px;border-radius:2px;background:${p.color};margin-right:6px;vertical-align:middle"></span>${p.seriesName}</span><b>${nf(p.value)} %</b></div>`).join("");
-        return `<div style="font-weight:600;margin-bottom:4px">${labL(VP.fechas[i])} · ${g} · n=${D.n[i]==null?"–":D.n[i].toLocaleString("es-ES")}${peq[i]?" (menos de 100: cautela)":""}</div>${rows}`;}};
-    o.xAxis={type:"category",data:VP.fechas.map(xl),boundaryGap:false,axisLine:{lineStyle:{color:SM.c.grid}},axisTick:{show:false},
-      axisLabel:{color:SM.c.subtle,fontSize:11,interval:mov?5:2,hideOverlap:true}};
-    o.yAxis={type:"value",min:0,axisLabel:{color:SM.c.subtle,fontSize:11,formatter:x=>x+" %"},splitLine:{lineStyle:{color:"#EEEBE3"}}};
-    o.series=sel.map(p=>({name:p,type:"line",data:D.series[p].map((val,i)=>peq[i]&&val!=null?{value:val,symbol:"emptyCircle",symbolSize:7}:val),
-      connectNulls:false,showSymbol:hayPeq,symbol:"none",lineStyle:{width:2,color:COLOR[p]},itemStyle:{color:COLOR[p]},emphasis:{focus:"series",lineStyle:{width:3}},
-      endLabel:{show:!mov,formatter:q=>`${p}  ${nf(q.value)}`,color:SM.c.tinta,fontSize:11.5,distance:6},labelLayout:{moveOverlap:"shiftY"}}));
-    ch.setOption(o,true);
-    document.getElementById("vp-nota").textContent="Fuente: Barómetros del CIS (microdatos), voto + simpatía (VOTOSIMG, codificación del CIS), ponderado con PESO. % sobre el total de personas del grupo. "+
-      "Los grupos pequeños tienen un margen de error amplio (con n = 200, unos ±6 puntos para un partido en torno al 30 %, sin contar el efecto de la ponderación): conviene fijarse en la tendencia más que en los saltos de un mes. "+
-      (hayPeq?"Círculo vacío: mes con menos de 100 entrevistas en el grupo. ":"")+
-      (v==="laboral"?"Jubilado/a o pensionista incluye a quienes no trabajaron antes; en paro incluye a quienes buscan su primer empleo; sin «otra situación». ":"")+
-      (v==="civil"?"Separado/a y divorciado/a van juntos. ":"")+(v==="clase"?"Clase social subjetiva; sin «otras», N.S. ni N.C. ":"")+
-      "Sumar incluye a sus socios; hasta diciembre de 2023 el CIS cuenta a Podemos dentro de Sumar. El CIS no hace barómetro en agosto.";
-    const idx=VP.fechas.map((_,i)=>i).reverse();
-    document.getElementById("vp-tabla").innerHTML=`<table><thead><tr><th>${g} (%)</th>${idx.map(i=>`<th>${xl(VP.fechas[i])}</th>`).join("")}</tr></thead><tbody>${
-      sel.map(p=>`<tr><td>${p}</td>${idx.map(i=>{const x=D.series[p][i];return `<td class="${x==null?"na":""}">${nf(x)}</td>`}).join("")}</tr>`).join("")}
-      <tr><td>n (entrevistas)</td>${idx.map(i=>`<td>${D.n[i]==null?"–":D.n[i].toLocaleString("es-ES")}</td>`).join("")}</tr></tbody></table>`;
-  }
-  botones();
-  let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(pinta,200);});
-  pinta();
-})();
-
-/* ===================== CIS · Voto + simpatía por perfil en una oleada (barras verticales, con barra deslizante) ===================== */
-(function(){
-  const VP=DATA.cis_vsperfil, grid=document.getElementById("grid-cis-voto"); if(!VP||!grid)return;
-  const card=document.createElement("div"); card.className="card";
-  card.innerHTML=`
-      <div class="card-head"><div><h3>Voto + simpatía por perfil</h3><p class="subt" id="vb-subt"></p></div>
-        <button class="export-btn" id="vb-export" data-chart="vb-ch" data-name="cis_votosim_barras" hidden>⬇ PNG</button></div>
-      <div class="ctrls"><label class="sel-lab">Cruzar por <select id="vb-var" class="sel"></select></label></div>
-      <div class="chips" id="vb-chips"></div>
-      <div class="deslizador">
-        <div class="deslizador-cab"><span>Barómetro:</span> <b id="vb-oleada"></b></div>
-        <input type="range" id="vb-rango" min="0" step="1" aria-label="Elegir barómetro">
-        <div class="deslizador-marcas"><span id="vb-ini"></span><span id="vb-fin"></span></div>
-      </div>
-      <div class="scroll-x"><div class="chart" id="vb-ch" style="height:420px;min-width:620px"></div></div>
-      <p class="foot-note" id="vb-nota"></p>
-      <details class="tabla"><summary>Ver los datos en tabla</summary><div class="tabla-wrap" id="vb-tabla"></div></details>`;
-  grid.appendChild(card);
-  const COLOR={...PARTY_COLORS,"Se Acabó la Fiesta":"#6D4C41","Otros partidos":"#C9C5B8","En blanco":"#B8B2A0","Voto nulo":"#8C8676",
-    "Ninguno / no votaría":"#1A1A1A","N.S.":"#7C8C8A","N.C.":"#A9B4B2"};
-  const DEF=["PSOE","PP","VOX","Sumar","Podemos"], MAX=8;
-  const nf=(v,d=1)=>v==null?"–":v.toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d});
-  const last=VP.fechas.length-1; let i=last; // por defecto, el último barómetro
-  let v=VP.vars[0].id, sel=[...DEF];
-  const rng=document.getElementById("vb-rango");
-  rng.max=String(last); rng.value=String(last);
-  document.getElementById("vb-ini").textContent=labL(VP.fechas[0]); document.getElementById("vb-fin").textContent=labL(VP.fechas[last]);
-  rng.addEventListener("input",()=>{i=+rng.value;pinta();});
-  const selV=document.getElementById("vb-var");
-  selV.innerHTML=VP.vars.map(x=>`<option value="${x.id}">${x.nombre}</option>`).join("");
-  selV.addEventListener("change",()=>{v=selV.value;pinta();});
-  const ch=mkChart("vb-ch"), esMovil=()=>window.innerWidth<640;
-  function chips(){
-    const el=document.getElementById("vb-chips"), resto=VP.orden.filter(p=>!sel.includes(p));
-    el.innerHTML=sel.map(p=>`<span class="chip"><span class="sw" style="background:${COLOR[p]}"></span><span class="nm">${p}</span><button type="button" data-q="${encodeURIComponent(p)}" aria-label="Quitar ${p}">×</button></span>`).join("")
-      +(sel.length<MAX&&resto.length?`<select class="add-sel" aria-label="Añadir"><option value="">+ Añadir…</option>${resto.map(p=>`<option value="${encodeURIComponent(p)}">${p}</option>`).join("")}</select>`:"")
-      +`<button type="button" class="link-btn">Restablecer</button>`;
-    el.querySelectorAll(".chip button").forEach(x=>x.addEventListener("click",()=>{sel=sel.filter(p=>p!==decodeURIComponent(x.dataset.q));pinta();}));
-    const a=el.querySelector("select"); if(a)a.addEventListener("change",()=>{if(a.value){sel.push(decodeURIComponent(a.value));sel.sort((x,y)=>VP.orden.indexOf(x)-VP.orden.indexOf(y));pinta();}});
-    el.querySelector(".link-btn").addEventListener("click",()=>{sel=[...DEF];pinta();});
-  }
-  function pinta(){
-    if(!ch)return;
-    const V=VP.vars.find(x=>x.id===v), G=V.grupos, D=VP.datos[v], mov=esMovil();
-    const peq=G.map(g=>D[g].n[i]!=null&&D[g].n[i]<100);
-    document.getElementById("vb-oleada").textContent=`${labL(VP.fechas[i])} · estudio ${VP.estudios[i]}${i===last?" (último)":""}`;
-    document.getElementById("vb-subt").textContent=`${labL(VP.fechas[i])} (estudio ${VP.estudios[i]}) · voto + simpatía por ${V.nombre.toLowerCase()} · % sobre el total de cada grupo`;
-    document.getElementById("vb-export").dataset.name=`cis_votosim_${v}_${VP.fechas[i]}`;
-    chips();
-    const o=smBaseOption();
-    o.grid={left:8,right:12,top:40,bottom:30,containLabel:true};
-    o.legend={top:0,left:0,itemWidth:12,itemHeight:8,icon:"roundRect",textStyle:{color:SM.c.tinta,fontSize:11.5,fontFamily:SM.sans}};
-    o.tooltip={backgroundColor:"#fff",borderColor:SM.c.grid,borderWidth:1,textStyle:{color:SM.c.tinta,fontFamily:SM.sans,fontSize:12},extraCssText:"box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:3px",
-      trigger:"axis",axisPointer:{type:"shadow",shadowStyle:{color:"rgba(1,69,80,.06)"}},
-      formatter:ps=>{const k=ps[0].dataIndex, g=G[k];return `<div style="font-weight:600;margin-bottom:4px">${g} · n=${D[g].n[i].toLocaleString("es-ES")}${peq[k]?" (menos de 100: cautela)":""}</div>`+
-        ps.map(p=>`<div style="display:flex;gap:8px;justify-content:space-between"><span><span style="display:inline-block;width:10px;height:8px;border-radius:2px;background:${p.color};margin-right:6px"></span>${p.seriesName}</span><b>${nf(p.value)} %</b></div>`).join("");}};
-    o.xAxis={type:"category",data:G.map((g,k)=>g+(peq[k]?"*":"")),axisTick:{show:false},axisLine:{lineStyle:{color:SM.c.grid}},
-      axisLabel:{color:SM.c.tinta,fontSize:mov?10:11.5,interval:0,width:mov?70:110,overflow:"break",lineHeight:13}};
-    o.yAxis={type:"value",min:0,axisLabel:{color:SM.c.subtle,fontSize:11,formatter:x=>x+" %"},splitLine:{lineStyle:{color:"#EEEBE3"}}};
-    const muchas=sel.length*G.length>30;
-    o.series=sel.map(p=>({name:p,type:"bar",data:G.map(g=>D[g].series[p][i]),barMaxWidth:26,barGap:"12%",barCategoryGap:"28%",
-      itemStyle:{color:COLOR[p],borderRadius:[3,3,0,0]},
-      label:{show:!muchas&&!mov,position:"top",fontSize:10,color:SM.c.tinta,formatter:q=>q.value==null?"":nf(q.value,0)}}));
-    ch.setOption(o,true);
-    document.getElementById("vb-nota").textContent="Mueve la barra deslizante de encima del gráfico para elegir el barómetro. Fuente: Barómetros del CIS (microdatos), voto + simpatía (VOTOSIMG, codificación del CIS), ponderado con PESO. % sobre el total de personas de cada grupo (el resto hasta 100 son otros partidos, blanco, nulo, ninguno, N.S. y N.C.). "+
-      (mov?"En el móvil, desliza el gráfico hacia los lados para ver todos los grupos. ":"")+(muchas?"Con muchas barras las cifras se ven al pasar el ratón o en la tabla. ":"")+
-      (peq.some(Boolean)?"* Grupo con menos de 100 entrevistas: tómese con cautela. ":"")+
-      "En grupos de unas 200 entrevistas el margen de error ronda ±6 puntos para un partido en torno al 30 %. "+
-      (v==="laboral"?"Jubilado/a o pensionista incluye a quienes no trabajaron antes; en paro, a quienes buscan su primer empleo; sin «otra situación». ":"")+
-      (v==="civil"?"Separado/a y divorciado/a van juntos. ":"")+(v==="clase"?"Clase social subjetiva; sin «otras», N.S. ni N.C. ":"")+
-      "Sumar incluye a sus socios; hasta diciembre de 2023 el CIS cuenta a Podemos dentro de Sumar (sin barra de Podemos esos meses).";
-    document.getElementById("vb-tabla").innerHTML=`<table><thead><tr><th>${V.nombre} (%)</th>${G.map(g=>`<th>${g}</th>`).join("")}</tr></thead><tbody>${
-      sel.map(p=>`<tr><td>${p}</td>${G.map(g=>{const x=D[g].series[p][i];return `<td class="${x==null?"na":""}">${nf(x)}</td>`}).join("")}</tr>`).join("")}
-      <tr><td>n (entrevistas)</td>${G.map(g=>`<td>${D[g].n[i].toLocaleString("es-ES")}</td>`).join("")}</tr></tbody></table>`;
   }
   let rz; window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(pinta,200);});
   pinta();
@@ -1579,10 +1462,11 @@ function histPartidos(C){
   })();
 })();
 
-/* ===================== CIS · Análisis del voto: promedio de encuestas ===================== */
+/* ===================== Evolución encuestas: promedio de encuestas ===================== */
 /* Lee window.PROMEDIO (promedio.json, lo genera R/promedio.R en GitHub Actions). Si no existe, no se dibuja nada. */
 (function(){
-  const P=window.PROMEDIO, grid=document.getElementById("grid-cis-voto"); if(!P||!P.tendencia||!grid)return;
+  const P=window.PROMEDIO, grid=document.getElementById("grid-enc"); if(!grid)return;
+  if(!P||!P.tendencia){grid.innerHTML=`<div class="empty"><span class="k">Sin datos</span><p>El promedio de encuestas no está disponible en este momento.</p></div>`;return;}
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`
       <div class="card-head"><div><h3>Evolución de estimación de voto</h3><p class="subt">Líneas de tendencia y encuestas publicadas (puntos)</p></div>
@@ -1594,7 +1478,7 @@ function histPartidos(C){
       <div class="chips" id="pr-chips"></div>
       <div class="chart tall" id="pr-ch"></div>
       <p class="foot-note" id="pr-nota"></p>`;
-  grid.prepend(card);
+  grid.appendChild(card);
 
   const PARTS=P.partidos, IDS=PARTS.map(p=>p.id), T=P.tendencia, S=P.sondeos;
   const nf=v=>v==null?"–":v.toLocaleString("es-ES",{minimumFractionDigits:1,maximumFractionDigits:1});
