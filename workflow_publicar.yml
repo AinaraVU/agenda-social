@@ -1,0 +1,62 @@
+name: Promedio diario y publicación
+
+on:
+  schedule:
+    - cron: "0 5 * * *"        # 05:00 UTC = 07:00 en Madrid en verano, 06:00 en invierno
+  push:
+    branches: [main]
+  workflow_dispatch:           # botón «Run workflow» para lanzarlo a mano
+
+permissions:
+  contents: write              # para hacer commit de promedio.json
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  promedio:
+    # En los push (p. ej. data.json nuevo) solo se publica; el promedio se calcula a diario o a mano
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::rvest, any::xml2, any::httr2, any::jsonlite, any::dplyr, any::stringr
+      - name: Calcular promedio.json
+        run: Rscript R/promedio.R
+      - name: Guardar promedio.json si ha cambiado
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add promedio.json
+          git diff --cached --quiet || git commit -m "Promedio de encuestas $(date +%F)"
+          git pull --rebase
+          git push
+
+  publicar:
+    needs: promedio
+    if: always() && (needs.promedio.result == 'success' || needs.promedio.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main }    # incluye el promedio.json recién guardado
+      - name: Preparar la web (solo lo público)
+        run: |
+          mkdir _site
+          cp index.html app.js data.json _site/
+          [ -f promedio.json ] && cp promedio.json _site/ || true
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+      - id: deploy
+        uses: actions/deploy-pages@v4
