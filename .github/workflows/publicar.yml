@@ -1,11 +1,12 @@
 name: Promedio diario y publicación
 
-schedule:
-     - cron: "23 4 * * *"    # 06:23 en Madrid (verano)
-     - cron: "41 7 * * *"    # respaldo: 09:41 en Madrid (verano)
-push:
+on:
+  schedule:
+    - cron: "23 4 * * *"    # 06:23 en Madrid (verano)
+    - cron: "41 7 * * *"    # respaldo: 09:41 en Madrid (verano)
+  push:
     branches: [main]
-workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
   contents: write
