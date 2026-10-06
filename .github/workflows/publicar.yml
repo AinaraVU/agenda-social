@@ -1,9 +1,7 @@
 name: Publicar la web
 
-# La web se publica cada vez que cambia algo en este repositorio:
-#  - data.json lo envía el robot «Datos nuevos» del repositorio privado agenda-social-datos
-#  - promedio.json lo envía cada día el robot «Promedio diario de encuestas» del privado
-#  - index.html / app.js cuando cambias el diseño
+# La web (index.html) la envía el robot «Actualizar la web» del repositorio privado agenda-social-datos.
+# Aquí solo se publica en GitHub Pages cada vez que cambia algo en este repositorio.
 on:
   push:
     branches: [main]
@@ -29,8 +27,8 @@ jobs:
       - name: Preparar la web (solo lo público)
         run: |
           mkdir _site
-          cp index.html app.js data.json _site/
-          [ -f promedio.json ] && cp promedio.json _site/ || true
+          cp index.html _site/
+          for f in app.js data.json promedio.json; do [ -f "$f" ] && cp "$f" _site/ || true; done
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: _site }
