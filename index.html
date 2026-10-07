@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Monitor de opinión pública · Silván &amp; Miracle</title>
+<title>Matiz · El monitor de la opinión pública · Silván &amp; Miracle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif&display=swap">
@@ -35,7 +35,8 @@ header.page{padding-block:16px 0;border-bottom:1px solid var(--grid);display:fle
 .src-badges{display:flex;flex-wrap:wrap;gap:6px}
 .src-badge{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--sm-teal);background:var(--sm-crema);border-radius:2px;padding:6px 11px;white-space:nowrap}
 .brand{display:flex;flex-direction:column;gap:2px;align-items:center;text-align:center}   /* título centrado */
-.brand h1{margin:0;font-weight:600;font-size:24px;letter-spacing:-.01em}
+.brand h1{margin:0;font-weight:600;font-size:34px;letter-spacing:-.01em;line-height:1.1;color:var(--sm-tinta)}   /* nombre de la herramienta */
+.brand .lema{font-size:26px;font-weight:400;letter-spacing:-.01em;line-height:1.15;color:var(--sm-tinta);margin-bottom:8px}   /* apellido bajo el nombre */
 .brand .sub{font-family:var(--font-serif);font-size:16px;color:var(--subtle)}
 
 /* Dos grandes pestañas: una por fuente */
@@ -153,7 +154,7 @@ details.tabla summary{cursor:pointer;color:var(--sm-teal);font-weight:500}
 footer.page .src-badges{flex-basis:100%}
 footer.page{border-top:1px solid var(--grid);padding-block:20px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--subtle)}
 .footer-logo{height:22px;width:auto;opacity:.9;flex-shrink:0}
-@media (max-width:520px){nav.main-tabs button .t{font-size:15px}.brand h1{font-size:21px}}
+@media (max-width:520px){nav.main-tabs button .t{font-size:15px}.brand h1{font-size:28px}.brand .lema{font-size:21px}}
 @media (max-width:620px){nav.main-tabs button .t{font-size:14px;line-height:1.2}nav.main-tabs button .d{font-size:11px}nav.main-tabs button{padding:8px 4px 10px}}
 @media (max-width:760px){header.page{position:static}nav.sub-tabs{top:0}}
 .par-escalas{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
@@ -182,7 +183,8 @@ footer.page{border-top:1px solid var(--grid);padding-block:20px 40px;display:fle
       </div>
     </div>
     <div class="brand">
-      <h1>Monitor de opinión pública</h1>
+      <h1>Matiz</h1>
+      <span class="lema">El monitor de la opinión pública</span>
       <span class="sub">Seguimiento de la opinión pública con el Barómetro del CIS, el Sociómetro Vasco y el promedio de encuestas estatales</span>
     </div>
     <nav class="main-tabs" role="tablist" aria-label="Fuente">
@@ -337,7 +339,7 @@ async function imagenGrafico(id){
   c.fillStyle="#1A1A1A"; c.font=`600 ${18*R}px Inter, Arial, sans-serif`; let y=M; y+=envuelve(c,tit,M,y,W-2*M,24*R);
   if(sub){c.fillStyle="#5A6B6C"; c.font=`${14*R}px "Instrument Serif", Georgia, serif`; y+=6*R; envuelve(c,sub,M,y,W-2*M,19*R);}
   c.drawImage(img,0,top);
-  c.fillStyle="#5A6B6C"; c.font=`${11*R}px Inter, Arial, sans-serif`; c.textBaseline="middle"; const yPie=top+img.height+pie/2-4*R; c.fillText("Fuente: Monitor de opinión pública de Silván & Miracle",M,yPie);
+  c.fillStyle="#5A6B6C"; c.font=`${11*R}px Inter, Arial, sans-serif`; c.textBaseline="middle"; const yPie=top+img.height+pie/2-4*R; c.fillText("Fuente: Matiz, el monitor de la opinión pública de Silván & Miracle",M,yPie);
   const lh=30*R, lw=lh*logo.width/logo.height, mg=lh*21/139; c.drawImage(logo,W-M-lw+mg,yPie-lh/2,lw,lh);
   return dataURLaBlob(cv.toDataURL("image/png"));
 }
@@ -362,7 +364,7 @@ function botonesPng(){
     if(document.querySelector(`.export-btn[data-chart="${id}"]`))return;
     const el=document.getElementById(id); if(!el)return; const card=el.closest(".card");
     const nombre=((card?.querySelector(".card-head h3")?.textContent||"grafico")+"_"+id).toLowerCase();
-    const b=document.createElement("button"); b.className="export-btn"; b.type="button"; b.dataset.chart=id; b.dataset.name=nombre; b.textContent="⬇ PNG"; b.hidden=!downloadsCap;
+    const b=document.createElement("button"); b.className="export-btn"; b.type="button"; b.dataset.chart=id; b.dataset.name=nombre; b.textContent="⬇ Descargar el gráfico"; b.hidden=!downloadsCap;
     const head=card?.querySelector(".card-head");
     const varios=card&&card.querySelectorAll(".chart").length>1;
     if(head&&!varios&&!head.querySelector(".export-btn")){head.appendChild(b);}
@@ -377,7 +379,7 @@ function botonesPng(){
       card.appendChild(im);}   /* abajo a la derecha, tras la nota */
     const head=card.querySelector(".card-head");
     if(head&&!head.querySelector(".export-btn")){const b=document.createElement("button");b.className="export-btn";b.type="button";b.dataset.card=card.id;
-      b.dataset.name=((card.querySelector("h3")?.textContent||"tarjeta")+"_"+(card.closest(".tabpanel")?.id||"")).toLowerCase();b.textContent="⬇ PNG";b.hidden=!downloadsCap;head.appendChild(b);}
+      b.dataset.name=((card.querySelector("h3")?.textContent||"tarjeta")+"_"+(card.closest(".tabpanel")?.id||"")).toLowerCase();b.textContent="⬇ Descargar el gráfico";b.hidden=!downloadsCap;head.appendChild(b);}
   });
   marcaBotones();
 }
@@ -457,7 +459,7 @@ function montarProblemas(cfg){
     </div>
     <div class="card span8">
       <div class="card-head"><div><h3>Los 10 principales problemas</h3><p class="subt" id="${id("top10-subt")}"></p></div>
-        <button class="export-btn" data-chart="${id("ch-top10")}" data-name="${pre}_top10" id="${id("top10-export")}" hidden>⬇ PNG</button></div>
+        <button class="export-btn" data-chart="${id("ch-top10")}" data-name="${pre}_top10" id="${id("top10-export")}" hidden>⬇ Descargar el gráfico</button></div>
       <div class="chart" id="${id("ch-top10")}" style="height:420px"></div>
       <p class="foot-note">Cifra junto a cada problema: % ${cfg.g.elegido}; el valor anterior y la variación aparecen al pasar el ratón. Sin ${cfg.residualesTxt}.</p>
     </div>
@@ -468,7 +470,7 @@ function montarProblemas(cfg){
     </div>
     <div class="card">
       <div class="card-head"><div><h3>Evolución de los principales problemas</h3><p class="subt" id="${id("evo-subt")}"></p></div>
-        <button class="export-btn" data-chart="${id("ch-evo")}" data-name="${pre}_problemas" id="${id("evo-export")}" hidden>⬇ PNG</button></div>
+        <button class="export-btn" data-chart="${id("ch-evo")}" data-name="${pre}_problemas" id="${id("evo-export")}" hidden>⬇ Descargar el gráfico</button></div>
       <div class="chips" id="${id("chips")}"></div>
       <div class="chart tall" id="${id("ch-evo")}"></div>
       <p class="foot-note" id="${id("evo-nota")}"></p>
@@ -476,7 +478,7 @@ function montarProblemas(cfg){
     </div>
     <div class="card">
       <div class="card-head"><div><h3>Los 5 principales problemas por perfil</h3><p class="subt" id="${id("mapa-subt")}"></p></div>
-        <button class="export-btn" data-chart="${id("ch-mapa")}" data-name="${pre}_perfiles" id="${id("mapa-export")}" hidden>⬇ PNG</button></div>
+        <button class="export-btn" data-chart="${id("ch-mapa")}" data-name="${pre}_perfiles" id="${id("mapa-export")}" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><label class="sel-lab">Cruzar por <select id="${id("perfil")}" class="sel"></select></label></div>
       <div class="chart" id="${id("ch-mapa")}" style="height:330px"></div>
       <p class="foot-note" id="${id("mapa-nota")}"></p>
@@ -693,7 +695,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Evolución de la estimación de voto</h3>
         <p class="subt" id="enc-ev-sub">% de voto estimado en cada encuesta (puntos) y promedio de las encuestas (líneas)</p></div>
-        <button type="button" class="export-btn" data-chart="enc-ch" data-name="promedio_encuestas" hidden>PNG</button></div>
+        <button type="button" class="export-btn" data-chart="enc-ch" data-name="promedio_encuestas" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><div class="seg" id="enc-vista" role="group" aria-label="Vista"><button type="button" data-v="partidos" aria-pressed="true">Partidos</button><button type="button" data-v="bloques" aria-pressed="false">Bloques</button></div>
         <div class="seg seg-wrap" id="enc-per" role="group" aria-label="Periodo">
           <button type="button" data-p="todo" aria-pressed="true">Desde 2023</button><button type="button" data-p="2025" aria-pressed="false">Desde 2025</button>
@@ -836,7 +838,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`
       <div class="card-head"><div><h3>Movilización electoral según la ideología</h3><p class="subt" id="pv-subt"></p></div>
-        <button class="export-btn" id="pv-export" data-chart="pv-ch" data-name="cis_movilizados_ideologia" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="pv-export" data-chart="pv-ch" data-name="cis_movilizados_ideologia" hidden>⬇ Descargar el gráfico</button></div>
       <div class="pchips" id="pv-part" role="group" aria-label="Grupos ideológicos"></div>
       <div class="chart tall" id="pv-ch"></div>
       <p class="foot-note" id="pv-nota"></p>`;
@@ -881,7 +883,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`
       <div class="card-head"><div><h3>Evolución del voto + simpatía por perfil</h3><p class="subt" id="vp-subt"></p></div>
-        <button class="export-btn" id="vp-export" data-chart="vp-ch" data-name="cis_votosim_perfil" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="vp-export" data-chart="vp-ch" data-name="cis_votosim_perfil" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><label class="sel-lab">Cruzar por <select id="vp-var" class="sel"></select></label></div>
       <div class="ctrls"><div class="seg seg-wrap" id="vp-grupo" role="group" aria-label="Grupo"></div></div>
       <div class="chips" id="vp-chips"></div>
@@ -961,7 +963,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`
       <div class="card-head"><div><h3>Voto + simpatía por perfil</h3><p class="subt" id="vb-subt"></p></div>
-        <button class="export-btn" id="vb-export" data-chart="vb-ch" data-name="cis_votosim_barras" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="vb-export" data-chart="vb-ch" data-name="cis_votosim_barras" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><label class="sel-lab">Cruzar por <select id="vb-var" class="sel"></select></label></div>
       <div class="chips" id="vb-chips"></div>
       <div class="deslizador">
@@ -1040,7 +1042,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`
       <div class="card-head"><div><h3>Transferencia de voto</h3><p class="subt" id="tr-subt"></p></div>
-        <button class="export-btn" id="tr-export" data-chart="tr-ch" data-name="cis_transferencia" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="tr-export" data-chart="tr-ch" data-name="cis_transferencia" hidden>⬇ Descargar el gráfico</button></div>
       <div class="scroll-x"><div class="chart" id="tr-ch" style="height:560px;min-width:640px"></div></div>
       <p class="foot-note" id="tr-nota"></p>
       <details class="tabla"><summary>Ver la matriz en tabla (% de cada grupo de origen)</summary><div class="tabla-wrap" id="tr-tabla"></div></details>`;
@@ -1122,7 +1124,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   (function(){
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Evolución del voto</h3><p class="subt" id="sv-subt"></p></div>
-        <button class="export-btn" id="sv-export" data-chart="sv-ch" data-name="soc_intencion" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="sv-export" data-chart="sv-ch" data-name="soc_intencion" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><div class="seg" id="sv-elec" role="group" aria-label="Elecciones">
         <button type="button" data-v="Autonómicas" aria-pressed="true">Autonómicas</button>
         <button type="button" data-v="Juntas Generales" aria-pressed="false">Juntas Generales</button></div>
@@ -1180,7 +1182,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   (function(){
     const P=SV.perfiles; const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Intención de voto por perfil</h3><p class="subt" id="sb-subt"></p></div>
-        <button class="export-btn" id="sb-export" data-chart="sb-ch" data-name="soc_intencion_perfil" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="sb-export" data-chart="sb-ch" data-name="soc_intencion_perfil" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><div class="seg" id="sb-elec" role="group" aria-label="Elecciones">
         <button type="button" data-v="Autonómicas" aria-pressed="true">Autonómicas</button>
         <button type="button" data-v="Juntas Generales" aria-pressed="false">Juntas Generales</button></div>
@@ -1246,7 +1248,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   (function(){
     const TT=SV.transfer; const el="Autonómicas"; /* solo autonómicas (decisión de Mikel) */ const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Transferencia del voto en elecciones autonómicas</h3><p class="subt" id="st-subt"></p></div>
-        <button class="export-btn" id="st-export" data-chart="st-ch" data-name="soc_transferencia" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="st-export" data-chart="st-ch" data-name="soc_transferencia" hidden>⬇ Descargar el gráfico</button></div>
       <div class="scroll-x"><div class="chart" id="st-ch" style="height:560px;min-width:640px"></div></div>
       <p class="foot-note" id="st-nota"></p>
       <details class="tabla"><summary>Ver la matriz en tabla (% de cada grupo de origen)</summary><div class="tabla-wrap" id="st-tabla"></div></details>`;
@@ -1312,7 +1314,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     const P=DATA.cis_prefpte; if(!P)return;
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Preferencia como presidente/a del Gobierno</h3><p class="subt" id="pp-subt"></p></div>
-        <button class="export-btn" id="pp-export" data-chart="pp-ch" data-name="cis_preferencia_presidente" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="pp-export" data-chart="pp-ch" data-name="cis_preferencia_presidente" hidden>⬇ Descargar el gráfico</button></div>
       <!-- Sin la opción «Sobre quienes citan a un líder» (Mikel, paso 61): siempre sobre el total -->
       <div class="ctrls" hidden><div class="seg" id="pp-base" role="group" aria-label="Base">
         <button type="button" data-v="total" aria-pressed="true">Sobre el total</button>
@@ -1391,7 +1393,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
     const V=DATA.cis_valoracion; if(!V)return;
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Evolución de la aprobación de los líderes</h3><p class="subt" id="vl-subt"></p></div>
-        <button class="export-btn" id="vl-export" data-chart="vl-ch" data-name="cis_aprobacion_lideres" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="vl-export" data-chart="vl-ch" data-name="cis_aprobacion_lideres" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><label class="sel-lab">Cruzar por <select id="vl-var" class="sel"></select></label>
         <div class="seg" id="vl-modo" role="group" aria-label="Comparar" hidden>
           <button type="button" data-v="lideres" aria-pressed="true">Los 4 líderes en un grupo</button>
@@ -1486,7 +1488,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   (function(){
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Conocimiento de los líderes</h3><p class="subt" id="sl-c-subt"></p></div>
-        <button class="export-btn" id="sl-c-export" data-chart="sl-c-ch" data-name="sociometro_conocimiento_lideres" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="sl-c-export" data-chart="sl-c-ch" data-name="sociometro_conocimiento_lideres" hidden>⬇ Descargar el gráfico</button></div>
       <div class="chips" id="sl-c-chips"></div>
       <div class="chart tall" id="sl-c-ch"></div>
       <p class="foot-note" id="sl-c-nota"></p>
@@ -1547,7 +1549,7 @@ montarProblemas({pre:"sp",grid:"grid-soc-problemas",P:DATA.soc_problemas,PF:DATA
   (function(){
     const card=document.createElement("div"); card.className="card";
     card.innerHTML=`<div class="card-head"><div><h3>Evolución de la aprobación de los líderes</h3><p class="subt" id="sl-v-subt"></p></div>
-        <button class="export-btn" id="sl-v-export" data-chart="sl-v-ch" data-name="sociometro_aprobacion_lideres" hidden>⬇ PNG</button></div>
+        <button class="export-btn" id="sl-v-export" data-chart="sl-v-ch" data-name="sociometro_aprobacion_lideres" hidden>⬇ Descargar el gráfico</button></div>
       <div class="ctrls"><label class="sel-lab">Cruzar por <select id="sl-v-var" class="sel"></select></label>
         <div class="seg" id="sl-v-modo" role="group" aria-label="Comparar" hidden>
           <button type="button" data-v="lideres" aria-pressed="true">Todos los líderes en un grupo</button>
@@ -1623,7 +1625,7 @@ function montarIdeologia(C){
   /* Media por oleada (eje vertical) y posición en la escala (eje horizontal) */
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`<div class="card-head"><div><h3>${C.titulo||"Autoubicación ideológica"}</h3><p class="subt" id="${P}subt"></p></div>
-      <button class="export-btn" id="${P}export" data-chart="${P}ch" data-name="${C.exp}" hidden>⬇ PNG</button></div>
+      <button class="export-btn" id="${P}export" data-chart="${P}ch" data-name="${C.exp}" hidden>⬇ Descargar el gráfico</button></div>
     <div class="ctrls"><label class="sel-lab">Cruzar por <select id="${P}var" class="sel"></select></label></div>
     <div class="chart" id="${P}ch" style="height:${C.alto}px"></div>
     <p class="foot-note" id="${P}nota"></p>
@@ -1749,7 +1751,7 @@ montarIdeologia({grid:"soc-par-escalas",limpiar:false,pre:"snac-",data:DATA.soc_
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`<div class="card-head"><div><h3>Ideología y sentimiento nacionalista de los votantes de cada partido</h3>
       <p class="subt" id="cq-subt"></p></div>
-      <button class="export-btn" id="cq-export" data-chart="cq-ch" data-name="sociometro_cuadrantes" hidden>⬇ PNG</button></div>
+      <button class="export-btn" id="cq-export" data-chart="cq-ch" data-name="sociometro_cuadrantes" hidden>⬇ Descargar el gráfico</button></div>
     <div class="deslizador">
       <div class="deslizador-cab"><span>Oleada:</span> <b id="cq-oleada"></b></div>
       <input type="range" id="cq-ola" min="0" step="1" aria-label="Oleada">
@@ -1863,7 +1865,7 @@ function histConjunto(C){
   const card=document.createElement("div"); card.className="card";
   card.innerHTML=`<div class="card-head"><div><h3>Distribución de la autoubicación ideológica y posición de los votantes de cada partido</h3>
       <p class="subt">${C.subt}</p></div>
-      <button class="export-btn" id="${P}export" data-chart="${P}ch" data-name="${C.exp}" hidden>⬇ PNG</button></div>
+      <button class="export-btn" id="${P}export" data-chart="${P}ch" data-name="${C.exp}" hidden>⬇ Descargar el gráfico</button></div>
     <div class="chart tall" id="${P}ch"></div>
     <p class="foot-note">${C.nota}</p>
     <details class="tabla"><summary>Ver los datos en tabla</summary><div class="tabla-wrap" id="${P}tabla"></div></details>`;
