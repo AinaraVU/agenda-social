@@ -188,10 +188,10 @@ footer.page{border-top:1px solid var(--grid);padding-block:20px 40px;display:fle
       <span class="sub">Seguimiento de la opinión pública con el Barómetro del CIS, el Sociómetro Vasco y el promedio de encuestas estatales</span>
     </div>
     <nav class="main-tabs" role="tablist" aria-label="Fuente">
-      <button type="button" role="tab" id="tb-enc" data-tab="enc" aria-selected="false" aria-controls="tab-enc">
+      <button type="button" role="tab" id="tb-enc" data-tab="enc" aria-selected="true" aria-controls="tab-enc">
         <span class="t">Promedio de encuestas</span><span class="d">España · elecciones generales</span>
       </button>
-      <button type="button" role="tab" id="tb-cis" data-tab="cis" aria-selected="true" aria-controls="tab-cis">
+      <button type="button" role="tab" id="tb-cis" data-tab="cis" aria-selected="false" aria-controls="tab-cis">
         <span class="t">Barómetro del CIS</span><span class="d">España · mensual</span>
       </button>
       <button type="button" role="tab" id="tb-soc" data-tab="soc" aria-selected="false" aria-controls="tab-soc">
@@ -399,7 +399,7 @@ function showTab(t){
   Object.values(charts).forEach(c=>c.resize());
 }
 document.querySelectorAll("nav.main-tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
-let t0="enc"; try{const s=localStorage.getItem("ase.tab"); if(s==="cis"||s==="soc"||s==="enc")t0=s;}catch(e){}
+let t0="enc";   /* siempre se abre en el Promedio de encuestas (no se recuerda la última pestaña); los enlaces con #cis o #sociometro siguen funcionando */
 if(location.hash.startsWith("#sociometro"))t0="soc"; else if(location.hash.startsWith("#cis"))t0="cis"; else if(location.hash.startsWith("#encuestas"))t0="enc";
 
 /* Subpestañas de cada fuente (CIS y Sociómetro) */
@@ -414,7 +414,7 @@ const HASH_SRC={cis:"cis",sociometro:"soc"};
   const btns=[...document.querySelectorAll(`#tab-${src} nav.sub-tabs button`)];
   const keys=btns.map(b=>b.dataset.sub);
   btns.forEach(b=>b.addEventListener("click",()=>showSub(src,b.dataset.sub)));
-  let k0=keys[0]; try{const v=localStorage.getItem("ase.sub"+src); if(keys.includes(v))k0=v;}catch(e){}
+  let k0=keys[0];   /* cada fuente empieza en su primera subpestaña */
   const [h,hs]=location.hash.slice(1).split("/"); if(HASH_SRC[h]===src&&keys.includes(hs))k0=hs;
   showSub(src,k0);
 });
