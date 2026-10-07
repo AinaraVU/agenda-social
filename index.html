@@ -297,7 +297,8 @@ const PARTY_COLORS = {
   "Ciudadanos":"#FF8C00","ERC":"#F2B01E","Junts":"#20A39E","BNG":"#6CB4E4","CCa":"#F5D300","UPN":"#2B5AA6",
   "Se Acabó la Fiesta":"#6D4C41","PACMA":"#7FB343","NS/NC":"#7C8C8A","Otros/Blanco":"#C9C5B8"
 };
-function smLogoGraphic(){return {id:"smlogo",type:"image",right:6,bottom:4,z:100,silent:true,style:{image:SM_LOGO_REDUCIDO_URI,width:44,height:Math.round(44*118/331),opacity:.85}};}
+/* Firma de cada gráfico: logo completo de S&M abajo a la derecha (el PNG del logo tiene 21/139 de margen transparente) */
+function smLogoGraphic(){const w=104,h=Math.round(w*139/990);return {id:"smlogo",type:"image",right:2,bottom:0,z:100,silent:true,style:{image:SM_LOGO_PRINCIPAL_URI,width:w,height:h,opacity:.9}};}
 function smBaseOption(){return {color:SM.catLines,backgroundColor:"#fff",animationDuration:400,textStyle:{fontFamily:SM.sans,color:SM.c.tinta},
   grid:{left:8,right:24,top:20,bottom:34,containLabel:true},tooltip:{backgroundColor:SM.c.tinta,borderWidth:0,textStyle:{color:"#fff",fontFamily:SM.sans,fontSize:12}},graphic:[smLogoGraphic()]};}
 const charts={};
@@ -336,7 +337,7 @@ async function imagenGrafico(id){
   c.fillStyle="#1A1A1A"; c.font=`600 ${18*R}px Inter, Arial, sans-serif`; let y=M; y+=envuelve(c,tit,M,y,W-2*M,24*R);
   if(sub){c.fillStyle="#5A6B6C"; c.font=`${14*R}px "Instrument Serif", Georgia, serif`; y+=6*R; envuelve(c,sub,M,y,W-2*M,19*R);}
   c.drawImage(img,0,top);
-  c.fillStyle="#5A6B6C"; c.font=`${11*R}px Inter, Arial, sans-serif`; c.textBaseline="middle"; const yPie=top+img.height+pie/2-4*R; c.fillText("Silván & Miracle · Monitor de opinión pública",M,yPie);
+  c.fillStyle="#5A6B6C"; c.font=`${11*R}px Inter, Arial, sans-serif`; c.textBaseline="middle"; const yPie=top+img.height+pie/2-4*R; c.fillText("Fuente: Monitor de opinión pública de Silván & Miracle",M,yPie);
   const lh=30*R, lw=lh*logo.width/logo.height, mg=lh*21/139; c.drawImage(logo,W-M-lw+mg,yPie-lh/2,lw,lh);
   return dataURLaBlob(cv.toDataURL("image/png"));
 }
